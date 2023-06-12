@@ -1,9 +1,11 @@
 package peaksoft.api;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import peaksoft.dto.SimpleResponse;
 import peaksoft.dto.cheque.request.ChequeRequest;
+import peaksoft.dto.cheque.response.ChequePagination;
 import peaksoft.dto.cheque.response.ChequeResponse;
 import peaksoft.dto.cheque.response.SumAllChequeOfDay;
 import peaksoft.service.ChequeService;
@@ -26,9 +28,12 @@ public class ChequeApi {
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority('ADMIN', 'CHEF', 'WAITER')")
-    List<ChequeResponse> getAll(@PathVariable Long userId){
-        return chequeService.getAll(userId);
+    ChequePagination getAll(@PathVariable Long userId,
+                            @RequestParam(required = false, defaultValue = "1") int page,
+                            @RequestParam(required = false, defaultValue = "4") int size){
+        return chequeService.getAll(userId, PageRequest.of(page - 1, size));
     }
+
     @PostMapping
     @PreAuthorize("hasAnyAuthority('ADMIN', 'WAITER')")
     SimpleResponse createCheque(@PathVariable Long userId,
@@ -47,6 +52,13 @@ public class ChequeApi {
     SimpleResponse delete(@PathVariable Long userId,
                           @PathVariable Long chequeId){
         return chequeService.delete(chequeId);
+    }
+
+    @GetMapping("/{chequeId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'CHEF', 'WAITER')")
+    ChequeResponse getById(@PathVariable Long userId,
+                           @PathVariable Long chequeId){
+        return chequeService.getById(chequeId);
     }
     @GetMapping("/sumAllChequeOfDay")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'WAITER')")

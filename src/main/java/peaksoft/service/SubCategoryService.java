@@ -5,6 +5,7 @@ import peaksoft.dto.subCategory.request.SubCategoryRequest;
 import peaksoft.dto.subCategory.response.SubCategoryResponse;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author kurstan
@@ -18,4 +19,8 @@ public interface SubCategoryService {
     SimpleResponse update(Long subCategoryId, SubCategoryRequest subCategoryRequest);
 
     SimpleResponse delete(Long subCategoryId);
+
+    Map<String, SubCategoryResponse> groupByCategory(String categoryId);
+
+    SubCategoryResponse findById(Long subCategoryId);
 }

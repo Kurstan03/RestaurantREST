@@ -30,8 +30,14 @@ public class UserApi {
     List<UserResponse> getAll(){
         return userService.getAll();
     }
+
+    @GetMapping("/{userId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'CHEF', 'WAITER')")
+    UserResponse findById(@PathVariable Long userId){
+        return userService.findById(userId);
+    }
     @PostMapping("/register")
-    SimpleResponse signIn(@RequestBody RegisterRequest registerRequest){
+    SimpleResponse signIn(@RequestBody @Valid RegisterRequest registerRequest){
         return userService.register(registerRequest);
     }
 
@@ -54,7 +60,7 @@ public class UserApi {
     @PutMapping("/{userId}")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'CHEF', 'WAITER')")
     SimpleResponse updateUser(@PathVariable Long userId,
-                            @RequestBody RegisterRequest request){
+                              @RequestBody RegisterRequest request){
         return userService.updateUser(userId, request);
     }
     @DeleteMapping("/{userId}")

@@ -1,12 +1,15 @@
 package peaksoft.service.impl;
 
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import peaksoft.dto.SimpleResponse;
 import peaksoft.dto.cheque.request.ChequeRequest;
+import peaksoft.dto.cheque.response.ChequePagination;
 import peaksoft.dto.cheque.response.ChequeResponse;
-import peaksoft.dto.cheque.response.MenuItemForCheque;
 import peaksoft.dto.cheque.response.SumAllChequeOfDay;
 import peaksoft.entities.Cheque;
 import peaksoft.entities.MenuItem;
@@ -19,7 +22,6 @@ import peaksoft.repository.UserRepository;
 import peaksoft.service.ChequeService;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +33,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @Transactional
+@Slf4j
 public class ChequeServiceImpl implements ChequeService {
     private final ChequeRepository chequeRepository;
     private final MenuItemRepository menuItemRepository;
@@ -45,15 +48,22 @@ public class ChequeServiceImpl implements ChequeService {
     }
 
     @Override
-    public List<ChequeResponse> getAll(Long userId) {
-        List<ChequeResponse> cheques = new ArrayList<>();
-        for (ChequeResponse c : chequeRepository.getAllChequeByUserId(userId)) {
-            BigDecimal total = c.getAveragePrice().multiply(new BigDecimal(c.getService())).divide(new BigDecimal(100)).add(c.getAveragePrice());
+    public ChequePagination getAll(Long userId, PageRequest pageRequest) {
+        Page<ChequeResponse> chequesPage = chequeRepository.getAllChequeByUserId(userId, pageRequest);
+        List<ChequeResponse> cheques = chequesPage.getContent();
+        for (ChequeResponse c : cheques) {
+            BigDecimal total = c.getAveragePrice()
+                    .multiply(new BigDecimal(c.getService()))
+                    .divide(new BigDecimal(100))
+                    .add(c.getAveragePrice());
             c.setGrandTotal(total);
             c.setMeals(chequeRepository.getMeals(c.getId()));
-            cheques.add(c);
         }
-        return cheques;
+        return ChequePagination.builder()
+                .cheques(cheques)
+                .currentPage(chequesPage.getPageable().getPageNumber() + 1)
+                .totalPages(chequesPage.getTotalPages())
+                .build();
     }
 
     @Override
@@ -63,7 +73,7 @@ public class ChequeServiceImpl implements ChequeService {
         cheque.setCreatedAt(LocalDate.now());
         for (Long mealId : chequeRequest.mealsId()) {
             MenuItem menuItem = menuItemRepository.findById(mealId).orElseThrow(
-                    ()-> new NotFoundException("Meal with id - " + mealId + " is not found!"));
+                    () -> new NotFoundException("Meal with id - " + mealId + " is not found!"));
             menuItems.add(menuItem);
         }
         User user = userRepository.findById(userId).orElseThrow(
@@ -78,6 +88,22 @@ public class ChequeServiceImpl implements ChequeService {
                 .status(HttpStatus.OK)
                 .description("Your check has been accepted!")
                 .build();
+    }
+
+    @Override
+    public ChequeResponse getById(Long chequeId) {
+        ChequeResponse cheque = chequeRepository.getChequeById(chequeId).orElseThrow(() -> {
+            log.error("Cheque with id: " + chequeId + " is not found!");
+            throw new NotFoundException("Cheque with id: " + chequeId + " is not found!");
+        });
+
+        cheque.setMeals(chequeRepository.getMeals(chequeId));
+        BigDecimal total = cheque.getAveragePrice()
+                .multiply(new BigDecimal(cheque.getService()))
+                .divide(new BigDecimal(100)).add(cheque.getAveragePrice());
+        cheque.setGrandTotal(total);
+
+        return cheque;
     }
 
     @Override
@@ -103,10 +129,10 @@ public class ChequeServiceImpl implements ChequeService {
     @Override
     public SimpleResponse delete(Long chequeId) {
         if (!chequeRepository.existsById(chequeId)) {
-            throw new ExistsException("Cheque with id - " + chequeId +" doesn't exists!");
+            throw new ExistsException("Cheque with id - " + chequeId + " doesn't exists!");
         }
-        Cheque cheque = chequeRepository.findById(chequeId).orElseThrow(()->
-                new NotFoundException("Cheque with id - " + chequeId +" doesn't exists!"));
+        Cheque cheque = chequeRepository.findById(chequeId).orElseThrow(() ->
+                new NotFoundException("Cheque with id - " + chequeId + " doesn't exists!"));
         cheque.getMenuItems().forEach(menuItem -> menuItem.getCheques().remove(cheque));
         chequeRepository.deleteById(chequeId);
         return SimpleResponse.builder()
@@ -123,12 +149,12 @@ public class ChequeServiceImpl implements ChequeService {
         BigDecimal totalSum = new BigDecimal(0);
         int ser = 1;
         for (Cheque cheque : cheques) {
-            if (cheque.getUser().getId().equals(userId) && cheque.getCreatedAt().equals(date)){
-                sumAllChequeOfDay.setWaiter(cheque.getUser().getFirstName()+" "+cheque.getUser().getLastName());
+            if (cheque.getUser().getId().equals(userId) && cheque.getCreatedAt().equals(date)) {
+                sumAllChequeOfDay.setWaiter(cheque.getUser().getFirstName() + " " + cheque.getUser().getLastName());
                 sumAllChequeOfDay.setDate(cheque.getCreatedAt());
                 count++;
                 for (MenuItem menuItem : cheque.getMenuItems()) {
-                    totalSum = new BigDecimal(totalSum.intValue() + menuItem.getPrice().intValue());
+                    totalSum = totalSum.add(menuItem.getPrice());
                     ser = menuItem.getRestaurant().getService();
                 }
             }

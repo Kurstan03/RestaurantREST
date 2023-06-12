@@ -29,6 +29,13 @@ public class StopListApi {
         return stopListService.getStopLists(menuItemId);
     }
 
+    @GetMapping("/{stopListId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'CHEF', 'WAITER')")
+    StopListResponse findById(@PathVariable Long menuItemId,
+                              @PathVariable Long stopListId) {
+        return stopListService.findById(stopListId);
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyAuthority('ADMIN', 'CHEF')")
     SimpleResponse create(@PathVariable Long menuItemId,

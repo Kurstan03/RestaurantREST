@@ -3,7 +3,6 @@ package peaksoft.service;
 import peaksoft.dto.SimpleResponse;
 import peaksoft.dto.stopList.request.StopListRequest;
 import peaksoft.dto.stopList.response.StopListResponse;
-import peaksoft.entities.StopList;
 
 import java.util.List;
 
@@ -19,4 +18,7 @@ public interface StopListService {
     SimpleResponse update(Long menuItemId, Long stopListId, StopListRequest stopListRequest);
 
     SimpleResponse delete(Long menuItemId, Long stopListId);
+
+    StopListResponse findById(Long stopListId);
+
 }

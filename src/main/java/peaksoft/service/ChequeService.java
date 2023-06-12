@@ -1,7 +1,9 @@
 package peaksoft.service;
 
+import org.springframework.data.domain.PageRequest;
 import peaksoft.dto.SimpleResponse;
 import peaksoft.dto.cheque.request.ChequeRequest;
+import peaksoft.dto.cheque.response.ChequePagination;
 import peaksoft.dto.cheque.response.ChequeResponse;
 import peaksoft.dto.cheque.response.SumAllChequeOfDay;
 
@@ -13,7 +15,7 @@ import java.util.List;
  * @created at 19.03.2023 14:31
  */
 public interface ChequeService {
-    List<ChequeResponse> getAll(Long userId);
+    ChequePagination getAll(Long userId, PageRequest pageRequest);
 
     SimpleResponse createCheque(Long userId, ChequeRequest chequeRequest);
 
@@ -24,4 +26,6 @@ public interface ChequeService {
     SumAllChequeOfDay sumAllChequeOfDay(Long userId, LocalDate date);
 
     SimpleResponse avgCheque(Long userId, LocalDate date);
+
+    ChequeResponse getById(Long chequeId);
 }

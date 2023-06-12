@@ -5,8 +5,10 @@ import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.stereotype.Component;
+import peaksoft.exception.CustomAccessDeniedHandler;
 import peaksoft.security.jwt.JwtFilter;
 
 /**
@@ -23,14 +25,20 @@ public class SecurityConfig {
         this.authenticationProvider = authenticationProvider;
     }
     @Bean
+    public CustomAccessDeniedHandler accessDeniedHandler(){
+        return new CustomAccessDeniedHandler();
+    }
+    @Bean
     public SecurityFilterChain filter(HttpSecurity http) throws Exception {
         http.csrf()
                 .disable()
+                .exceptionHandling()
+                .and()
                 .authorizeHttpRequests()
                 .requestMatchers("/api/users/register", "/api/users/authenticate")
                 .permitAll()
                 .anyRequest()
-                .authenticated()
+                .permitAll()
                 .and()
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

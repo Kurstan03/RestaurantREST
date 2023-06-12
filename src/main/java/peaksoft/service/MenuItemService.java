@@ -1,8 +1,10 @@
 package peaksoft.service;
 
+import org.springframework.data.domain.PageRequest;
 import peaksoft.dto.SimpleResponse;
 import peaksoft.dto.menuItem.request.MenuItemRequest;
 import peaksoft.dto.menuItem.response.MenuItemResponse;
+import peaksoft.dto.pagination.PaginationResponse;
 
 import java.util.List;
 
@@ -22,4 +24,8 @@ public interface MenuItemService {
     List<MenuItemResponse> sort(String ascOrDesc);
 
     List<MenuItemResponse> isVegetarian(boolean isTrue);
+
+    MenuItemResponse getById(Long menuItemId);
+
+    PaginationResponse<MenuItemResponse> pagination(PageRequest pageRequest);
 }

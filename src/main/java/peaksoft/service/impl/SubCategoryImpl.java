@@ -15,6 +15,7 @@ import peaksoft.repository.SubCategoryRepository;
 import peaksoft.service.SubCategoryService;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author kurstan
@@ -55,6 +56,14 @@ public class SubCategoryImpl implements SubCategoryService {
     }
 
     @Override
+    public SubCategoryResponse findById(Long subCategoryId) {
+        return subCategoryRepository.getSubcategoryById(subCategoryId).orElseThrow(()-> {
+            log.error("Sub category with id - " + subCategoryId + " is not found!");
+            throw new NotFoundException("Sub category with id - " + subCategoryId + " is not found!");
+        });
+    }
+
+    @Override
     public SimpleResponse update(Long subCategoryId, SubCategoryRequest subCategoryRequest) {
         Subcategory subcategory = subCategoryRepository.findById(subCategoryId).orElseThrow(() -> {
             log.error("Sub category with id - " + subCategoryId + " is not found!");
@@ -78,5 +87,11 @@ public class SubCategoryImpl implements SubCategoryService {
                 .status(HttpStatus.OK)
                 .description("Sub category with id - " + subCategoryId + " is deleted!")
                 .build();
+    }
+
+    @Override
+    public Map<String, SubCategoryResponse> groupByCategory(String categoryId) {
+
+        return null;
     }
 }

@@ -27,4 +27,5 @@ public interface UserService {
 
     SimpleResponse deleteUser(Long userId);
 
+    UserResponse findById(Long userId);
 }

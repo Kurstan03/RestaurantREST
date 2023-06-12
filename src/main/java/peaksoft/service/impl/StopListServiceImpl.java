@@ -66,6 +66,14 @@ public class StopListServiceImpl implements StopListService {
     }
 
     @Override
+    public StopListResponse findById(Long stopListId) {
+        return stopListRepository.getStopListById(stopListId).orElseThrow(()-> {
+            log.error("Stop list with id - " + stopListId + " is not found!");
+            throw new NotFoundException("Stop list with id - " + stopListId + " is not found!");
+        });
+    }
+
+    @Override
     public SimpleResponse update(Long menuItemId, Long stopListId, StopListRequest stopListRequest) {
         MenuItem menuItem;
         menuItem = menuItemRepository.findById(menuItemId).orElseThrow(() -> {
@@ -90,7 +98,7 @@ public class StopListServiceImpl implements StopListService {
         stopList.setDate(stopListRequest.date());
         return SimpleResponse.builder()
                 .status(HttpStatus.OK)
-                .description("Stop list updated!")
+                .description("Stop  Iskhak is the best updated!")
                 .build();
     }
 

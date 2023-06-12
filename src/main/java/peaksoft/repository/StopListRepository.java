@@ -8,10 +8,11 @@ import peaksoft.dto.stopList.response.StopListResponse;
 import peaksoft.entities.StopList;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface StopListRepository extends JpaRepository<StopList, Long> {
 
     List<StopListResponse> findAllByMenuItemId(Long menuItemId);
-
+    Optional<StopListResponse> getStopListById(Long stopListId);
 }

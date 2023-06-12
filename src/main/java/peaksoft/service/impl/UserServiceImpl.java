@@ -2,18 +2,20 @@ package peaksoft.service.impl;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
-import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import peaksoft.dto.SimpleResponse;
 import peaksoft.dto.user.request.AcceptOrRejectRequest;
 import peaksoft.dto.user.request.RegisterRequest;
 import peaksoft.dto.user.request.UserRequest;
-import peaksoft.dto.user.response.*;
+import peaksoft.dto.user.response.UserResponse;
+import peaksoft.dto.user.response.UserTokenResponse;
 import peaksoft.entities.User;
 import peaksoft.entities.enums.Role;
 import peaksoft.exception.ExistsException;
@@ -33,7 +35,6 @@ import java.util.List;
  * @created at 16.03.2023 20:20
  */
 @Service
-@Builder
 @Transactional
 @Slf4j
 public class UserServiceImpl implements UserService {
@@ -51,21 +52,51 @@ public class UserServiceImpl implements UserService {
         this.restaurantRepository = restaurantRepository;
     }
 
+    private User getAuthenticate() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String login = authentication.getName();
+        log.info("Token has been taken!");
+        return userRepository.findByEmail(login).orElseThrow(() -> {
+            log.error("User not found!");
+            throw new NotFoundException("User not found!");
+        });
+    }
+
     @PostConstruct
     public void init() {
         if (!userRepository.existsByEmail("admin@gmail.com")) {
             User user = new User();
+            user.setFirstName("Admin");
+            user.setLastName("Erkinbaev");
             user.setEmail("admin@gmail.com");
             user.setPassword(passwordEncoder.encode("admin22"));
             user.setRole(Role.ADMIN);
             user.setAccepted(true);
             userRepository.save(user);
         }
+//        try {
+//            GoogleCredentials googleCredentials = GoogleCredentials.fromStream(new ClassPathResource("gadgetarium.json").getInputStream());
+//            FirebaseOptions firebaseOptions = FirebaseOptions.builder()
+//                    .setCredentials(googleCredentials)
+//                    .build();
+//            log.info("successfully works the init method");
+//            FirebaseApp firebaseApp = FirebaseApp.initializeApp(firebaseOptions);
+//        } catch (IOException e) {
+//            log.error("IOException");
+//        }
     }
 
     @Override
     public List<UserResponse> getAll() {
         return userRepository.getAllUsers();
+    }
+
+    @Override
+    public UserResponse findById(Long userId) {
+        return userRepository.getUserById(userId).orElseThrow(() -> {
+            log.error(String.format("User %s is not found!", userId));
+            throw new NotFoundException(String.format("User %s is not found!", userId));
+        });
     }
 
     @Override
@@ -121,6 +152,7 @@ public class UserServiceImpl implements UserService {
                 .login(userRequest.login())
                 .build();
     }
+
     @Override
     public List<UserResponse> getApplications() {
         return userRepository.getAllApplication();
@@ -129,22 +161,22 @@ public class UserServiceImpl implements UserService {
     @Override
     public SimpleResponse acceptResponse(Long restaurantId, AcceptOrRejectRequest acceptOrRejectRequest) {
         User user = userRepository.findById(acceptOrRejectRequest.userId())
-                .orElseThrow(() ->{
+                .orElseThrow(() -> {
                     log.error(String.format("User with id - %s is not found!",
                             acceptOrRejectRequest.userId()));
                     throw new NotFoundException(String.format("User with id - %s is not found!",
                             acceptOrRejectRequest.userId()));
                 });
-        if (acceptOrRejectRequest.accept()){
+        if (acceptOrRejectRequest.accept()) {
             user.setAccepted(true);
-            user.setRestaurant(restaurantRepository.findById(restaurantId).orElseThrow(()->{
+            user.setRestaurant(restaurantRepository.findById(restaurantId).orElseThrow(() -> {
                 log.error("Restaurant not found!");
                 throw new NotFoundException("Restaurant not found!");
             }));
             log.info(String.format("User - %s is accepted!", user.getEmail()));
             return new SimpleResponse(
                     HttpStatus.ACCEPTED,
-                   String.format("User - %s is accepted!", user.getEmail())
+                    String.format("User - %s is accepted!", user.getEmail())
             );
         } else {
             log.info(String.format("User - %s is rejected!", user.getEmail()));
@@ -159,7 +191,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public SimpleResponse updateUser(Long userId, RegisterRequest registerRequest) {
         for (User user : userRepository.findAll()) {
-            if (!user.getId().equals(userId) && user.getEmail().equals(registerRequest.email())) {
+            if (!user.getId().equals(getAuthenticate().getId()) && user.getEmail().equals(registerRequest.email())) {
                 log.error(String.format("User with login: %s is exists", registerRequest.email()));
                 throw new ExistsException(String.format(
                         "User with login: %s is exists", registerRequest.email()
@@ -167,9 +199,9 @@ public class UserServiceImpl implements UserService {
             }
         }
         checkForValid(registerRequest);
-        User oldUser = userRepository.findById(userId).orElseThrow(() -> {
-            log.error(String.format("User with id - %s is not found!", userId));
-            throw new NotFoundException(String.format("User with id - %s is not found!", userId));
+        User oldUser = userRepository.findById(getAuthenticate().getId()).orElseThrow(() -> {
+            log.error(String.format("User with id - %s is not found!", getAuthenticate().getId()));
+            throw new NotFoundException(String.format("User with id - %s is not found!", getAuthenticate().getId()));
         });
         oldUser.setFirstName(registerRequest.firstName());
         oldUser.setLastName(registerRequest.lastName());
@@ -181,7 +213,7 @@ public class UserServiceImpl implements UserService {
 
         return SimpleResponse.builder()
                 .status(HttpStatus.OK)
-                .description(String.format("User with id - %s is updated!",userId))
+                .description(String.format("User with id - %s is updated!", getAuthenticate().getId()))
                 .build();
     }
 

@@ -1,11 +1,18 @@
 package peaksoft.service.impl;
 
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
+import peaksoft.convert.MenuItemToMenuItemResponseConverter;
 import peaksoft.dto.SimpleResponse;
 import peaksoft.dto.menuItem.request.MenuItemRequest;
 import peaksoft.dto.menuItem.response.MenuItemResponse;
+import peaksoft.dto.pagination.PaginationResponse;
 import peaksoft.entities.MenuItem;
 import peaksoft.entities.Restaurant;
 import peaksoft.entities.Subcategory;
@@ -23,19 +30,22 @@ import java.util.List;
  * @author kurstan
  * @created at 18.03.2023 15:21
  */
+@Slf4j
 @Service
 @Transactional
 public class MenuItemServiceImpl implements MenuItemService {
     private final MenuItemRepository menuItemRepository;
     private final RestaurantRepository restaurantRepository;
     private final SubCategoryRepository subCategoryRepository;
+    private final MenuItemToMenuItemResponseConverter menuItemConverter;
 
     public MenuItemServiceImpl(MenuItemRepository menuItemRepository,
                                RestaurantRepository restaurantRepository,
-                               SubCategoryRepository subCategoryRepository) {
+                               SubCategoryRepository subCategoryRepository, MenuItemToMenuItemResponseConverter menuItemConverter) {
         this.menuItemRepository = menuItemRepository;
         this.restaurantRepository = restaurantRepository;
         this.subCategoryRepository = subCategoryRepository;
+        this.menuItemConverter = menuItemConverter;
     }
 
     @Override
@@ -43,11 +53,9 @@ public class MenuItemServiceImpl implements MenuItemService {
         List<MenuItemResponse> list = new ArrayList<>();
         if (keyWord == null) {
             list.addAll(menuItemRepository.getAll());
-            list.addAll(menuItemRepository.getMenuItemByStopListsNull());
             return list;
         }
         list.addAll(menuItemRepository.globalSearch(keyWord));
-//        list.addAll(menuItemRepository.globalSearchStopListsNull(keyWord));
         return list;
     }
 
@@ -77,6 +85,18 @@ public class MenuItemServiceImpl implements MenuItemService {
                 .status(HttpStatus.OK)
                 .description("Menu item - " + menuItem.getName() + " is saved!")
                 .build();
+    }
+
+    @Override
+    public MenuItemResponse getById(Long menuItemId) {
+        try {
+            return menuItemRepository.getMenuItemById(menuItemId).orElseThrow(() -> {
+                log.error("Menu item with id - " + menuItemId + " is not found!");
+                throw new NotFoundException("Menu item with id - " + menuItemId + " is not found!");
+            });
+        } catch (BadCredentialsException e) {
+            throw new AccessDeniedException(e.getMessage());
+        }
     }
 
     @Override
@@ -114,8 +134,8 @@ public class MenuItemServiceImpl implements MenuItemService {
 
     @Override
     public List<MenuItemResponse> sort(String ascOrDesc) {
-        if (ascOrDesc.equals("desc")){
-           return menuItemRepository.getAllByOrderByPriceDesc();
+        if (ascOrDesc.equals("desc")) {
+            return menuItemRepository.getAllByOrderByPriceDesc();
         } else {
             return menuItemRepository.getAllByOrderByPriceAsc();
         }
@@ -124,5 +144,16 @@ public class MenuItemServiceImpl implements MenuItemService {
     @Override
     public List<MenuItemResponse> isVegetarian(boolean isTrue) {
         return menuItemRepository.findMenuItemByIsVegetarian(isTrue);
+    }
+
+    @Override
+    public PaginationResponse<MenuItemResponse> pagination(PageRequest pageRequest) {
+        Page<MenuItemResponse> menuItemPage = menuItemRepository.pagination(pageRequest);
+
+        return PaginationResponse.<MenuItemResponse>builder()
+                .elements(menuItemPage.getContent())
+                .currentPage(pageRequest.getPageNumber() + 1)
+                .totalPage(menuItemPage.getTotalPages())
+                .build();
     }
 }

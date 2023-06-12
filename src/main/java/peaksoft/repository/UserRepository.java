@@ -28,5 +28,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
             "(u.id, concat(u.firstName,' ', u.lastName), u.dateOfBirth, u.email," +
             " u.phoneNumber, u.role, u.experience)" +
             " from User u where u.id = ?1")
-    UserResponse getUserById(Long userId);
+    Optional<UserResponse> getUserById(Long userId);
 }

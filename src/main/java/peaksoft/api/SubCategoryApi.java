@@ -8,6 +8,7 @@ import peaksoft.dto.subCategory.response.SubCategoryResponse;
 import peaksoft.service.SubCategoryService;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author kurstan
@@ -32,6 +33,14 @@ public class SubCategoryApi {
                         @RequestBody SubCategoryRequest subCategoryRequest){
         return subCategoryService.save(categoryId, subCategoryRequest);
     }
+
+    @GetMapping("/{subCategoryId}")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'CHEF', 'WAITER')")
+    SubCategoryResponse findById(@PathVariable Long categoryId,
+                                 @PathVariable Long subCategoryId){
+        return subCategoryService.findById(subCategoryId);
+    }
+
     @PutMapping("/{subCategoryId}")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'CHEF')")
     SimpleResponse update(@PathVariable Long categoryId,
@@ -44,5 +53,10 @@ public class SubCategoryApi {
     SimpleResponse delete(@PathVariable Long categoryId,
                           @PathVariable Long subCategoryId){
         return subCategoryService.delete(subCategoryId);
+    }
+    @GetMapping("/groupingByCategory")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'CHEF', 'WAITER')")
+    Map<String, SubCategoryResponse> groupByCategory(@PathVariable String categoryId){
+        return subCategoryService.groupByCategory(categoryId);
     }
 }
