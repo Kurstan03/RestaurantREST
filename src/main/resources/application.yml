@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/restaurant
-    username: postgres
-    password: postgres
+    url: ${POSTGRES_DB}
+    username: ${POSTGRES_USERNAME}
+    password: ${POSTGRES_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: create
@@ -11,7 +11,7 @@ spring:
     secret_key: java8IsTheBest
 
 server:
-  port: 8080
+  port: 5050
   error:
     include-message: always
 
